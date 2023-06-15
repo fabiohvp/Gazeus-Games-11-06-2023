@@ -1,120 +1,81 @@
-import { Container, Text } from "pixi.js";
-import { STAGE_NAME } from "../game/constant";
+import { Container, Sprite } from "pixi.js";
+import { createButton } from "../factory/button";
+import { changeGemType } from "../factory/gem";
+import { createText } from "../factory/text";
+import {
+  EVENT_SCORE_UPDATE,
+  EVENT_TIMER_START,
+  INITIAL_SCORE,
+  STAGE_NAME,
+} from "../game/constant";
+import { TEXTURE } from "../game/texture";
 
-export async function createMenu(state: State) {
-  //the container that contains the menu
+export async function createMenu(parentContainer: Container, state: IState) {
   const container = new Container();
   container.name = STAGE_NAME.menu;
 
-  //adds the background
-  //container.addChild(new Sprite(this.room.textures("pause_menu")));
+  container.addChild(
+    new Sprite(state.spritesheet.textures[TEXTURE.Pause_menu])
+  );
   container.height = state.app.screen.height / 2;
   container.width = state.app.screen.width / 2;
 
-  // container.pivot.x = container.width / 2;
-  // container.pivot.y = container.height / 2;
+  container.position.x = container.width / 2;
+  container.position.y = container.height / 2;
 
-  const text = createMenuButtonText("Paused!", { fontSize: 21 });
-  //text.x = container.width / 2;
-  //text.y = container.height * 0.1;
-  container.addChild(text);
+  const title = createTitle();
+  container.addChild(title);
 
-  // this.button = Object.create(null);
+  const scoreText = createScoreText(state);
+  container.addChild(scoreText);
 
-  // //resume button
-  // this.button.resume = new GMPixi.extra.MenuButton({
-  //   room: this.room,
-  //   text: "Resume",
-  // });
-  // this.button.resume.position.set(
-  //   container.width / 2,
-  //   container.height * 0.375
-  // );
+  const playButton = createPlayButton(container, parentContainer, state);
+  container.addChild(playButton);
 
-  // /**
-  //  * Events for button resume
-  //  */
-  // this.button.resume.on(
-  //   "pointerup",
-  //   function () {
-  //     this.exit = true;
-  //     this.goto = 0;
-  //     this.enabled = false;
-  //   }.bind(this)
-  // );
-
-  // //restart button
-  // this.button.restart = new GMPixi.extra.MenuButton({
-  //   room: this.room,
-  //   text: "Restart",
-  // });
-  // this.button.restart.position.set(container.width / 2, container.height * 0.6);
-
-  // /**
-  //  * What to do when clicked
-  //  */
-  // this.button.restart.on(
-  //   "pointerup",
-  //   function () {
-  //     this.exit = true;
-  //     this.goto = 1;
-  //     this.enabled = false;
-  //   }.bind(this)
-  // );
-
-  // //exit button
-  // this.button.exit = new GMPixi.extra.MenuButton({
-  //   room: this.room,
-  //   text: "Exit",
-  // });
-  // this.button.exit.position.set(container.width / 2, container.height * 0.825);
-
-  // /**
-  //  * What to do when clicked
-  //  */
-  // this.button.exit.on(
-  //   "pointerup",
-  //   function () {
-  //     this.exit = true;
-  //     this.goto = -1;
-  //     this.enabled = false;
-  //   }.bind(this)
-  // );
-
-  // /**
-  //  * There is an error when adding child to container separately
-  //  * so add them all at once
-  //  */
-  // container.addChild(this.button.resume, this.button.restart, this.button.exit);
-
-  // this.addChild(container);
-
-  // container.position.set(this.room.width / 2, this.room.height / 2);
+  state.swapEnabled = false;
   return container;
 }
 
-export function createMenuButtonText(
-  label: string,
-  {
-    anchor,
-    fontSize,
-  }: {
-    anchor?: number[];
-    fontSize: number;
-  }
+function createPlayButton(
+  container: Container,
+  parentContainer: Container,
+  state: IState
 ) {
-  const text = new Text(label, {
-    fill: 0xffffff,
-    fontFamily: "Century Gothic",
-    fontSize,
-    fontWeight: "bold",
-  });
-  if (anchor?.length) {
-    if (anchor.length > 1) {
-      text.anchor.set(anchor[0], anchor[1]);
-    } else {
-      text.anchor.set(anchor[0], anchor[0]);
+  const text = createText("Restart", 24);
+  text.anchor.set(0.5, -0.25);
+
+  const button = createButton(TEXTURE.Button_down, TEXTURE.Button_up, state);
+  button.position.set(container.width * 0.28, 200);
+  button.addChild(text);
+
+  button.on("pointerup", async () => {
+    state.score = INITIAL_SCORE;
+    // @ts-ignore
+    state.app.stage.emit(EVENT_SCORE_UPDATE, state.score);
+
+    for (let slotX = 0; slotX < state.slots.length; slotX++) {
+      for (let slotY = 0; slotY < state.slots.length; slotY++) {
+        changeGemType(state.slots[slotX][slotY], state);
+      }
     }
-  }
+    parentContainer.removeChild(container);
+    state.swapEnabled = true;
+    // @ts-ignore
+    state.app.stage.emit(EVENT_TIMER_START);
+  });
+  return button;
+}
+
+function createScoreText(state: IState) {
+  const text = createText(`Score: ${state.score}`, 16);
+  text.position.x = 15;
+  text.position.y = 100;
+  return text;
+}
+
+function createTitle() {
+  const text = createText("Game ended", 20);
+  text.position.x = 15;
+  text.position.y = 17;
   return text;
 }

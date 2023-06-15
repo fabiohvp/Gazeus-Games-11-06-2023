@@ -1,8 +1,15 @@
+//1 = roxo
+//2 = verde
+//3 = vermelho
+//4 = laranja
+//5 = azul
 import { Container, FederatedPointerEvent, Sprite } from "pixi.js";
 import { swap } from "../animation/swap";
 import {
   BOARD_SIZE,
   FINAL_SLOT_POSITION,
+  GEMS_SEQUENCE_MIN,
+  GEMS_TYPES_COUNT,
   INITIAL_SLOT_POSITION,
   SLOT_SIZE,
 } from "../game/constant";
@@ -33,17 +40,42 @@ export function calculateGemSlotY(y: number) {
   return Math.floor((y / SLOT_SIZE.height - 1) % (BOARD_SIZE.columns + 1)) - 1;
 }
 
-export function createGem(state: State, textureIndex: number) {
-  const gem = new Sprite(state.spritesheet.textures[GEMS[textureIndex - 1]]);
+export function changeGemType(gemSlot: IGemSlot, state: IState) {
+  gemSlot.type = createGemType();
+  gemSlot.gem.texture = createGemTexture(gemSlot.type, state);
+}
+
+export function createGemTexture(type: number, state: IState) {
+  return state.spritesheet.textures[GEMS[type - 1]];
+}
+
+export function createGem(type: number, state: IState) {
+  const texture = createGemTexture(type, state);
+  const gem = new Sprite(texture);
   gem.cursor = "pointer";
-  gem.visible = false;
+  gem.alpha = 0;
   gem.interactive = true;
   return gem;
 }
 
-export function createGemKey(coordinates: Slot | null) {
-  if (!coordinates) return null;
-  return `${coordinates.slotX}-${coordinates.slotY}`;
+export function createGemSlot(slot: ISlot, state: IState) {
+  const type = createGemType();
+  const gem = createGem(type, state);
+  const gemSlot = { type, gem, ...slot };
+  gemSlot.gem.position.set(
+    calculateGemCoordinateX(slot.slotX),
+    getGemInitialY()
+  );
+  return gemSlot;
+}
+
+export function createGemKey(slot: ISlot | null) {
+  if (!slot) return null;
+  return `${slot.slotX}-${slot.slotY}`;
+}
+
+export function createGemType() {
+  return createRandom(1, 5);
 }
 
 export function getGemCoordinatesFromMouse(
@@ -70,78 +102,39 @@ export function getGemCoordinatesFromMouse(
   return { slotX, slotY };
 }
 
-export function getGemCoordinatesFromSlot(slot: Slot) {
+export function getGemCoordinatesFromSlot(slot: ISlot) {
   return {
     x: calculateGemCoordinateX(slot.slotX),
     y: calculateGemCoordinateY(slot.slotY),
   };
 }
 
-export function shuffleGems(state: State) {
-  const gemSlots: GemSlot[] = [];
+export function shuffleGems(state: IState) {
+  const gemSlots: IGemSlot[] = [];
 
   for (let slotX = 0; slotX < BOARD_SIZE.rows; slotX++) {
     for (let slotY = BOARD_SIZE.columns - 1; slotY >= 0; slotY--) {
-      const type = createRandom(1, 5);
-      const gem = createGem(state, type);
-      const gemSlot = { type, gem, slotX, slotY };
+      const gemSlot = createGemSlot({ slotX, slotY }, state);
       gemSlots.push(gemSlot);
     }
   }
   return gemSlots;
 }
 
-export function swapGems(
-  keyFrom: Slot,
-  keyTo: Slot,
-  state: State,
-  swapBack = false
-) {
-  state.swaping = true;
-  const from = state.slots[keyFrom.slotX][keyFrom.slotY];
-  const to = state.slots[keyTo.slotX][keyTo.slotY];
+export async function swapGemsSlots(from: IGemSlot, to: IGemSlot) {
+  await swap(from, to);
+  const gemFrom = from.gem;
+  const typeFrom = from.type;
 
-  swap(from, to, () => {
-    const fromX = from.slotX;
-    const fromY = from.slotY;
-    from.slotX = to.slotX;
-    from.slotY = to.slotY;
-    to.slotX = fromX;
-    to.slotY = fromY;
+  from.gem = to.gem;
+  from.type = to.type;
 
-    state.slots[keyFrom.slotX][keyFrom.slotY] = to;
-    state.slots[keyTo.slotX][keyTo.slotY] = from;
-
-    if (swapBack) {
-      state.swaping = false;
-    } else {
-      if (from.type === to.type) {
-        swapGems(keyTo, keyFrom, state, true);
-      } else {
-        const collisions = Array.prototype.concat(
-          getGemCollisions(from, state),
-          getGemCollisions(to, state)
-        );
-
-        if (collisions.length) {
-          // @ts-ignore
-          state.app.stage.emit("remove-gems", collisions);
-        } else {
-          swapGems(keyTo, keyFrom, state, true);
-        }
-        state.swaping = false;
-      }
-    }
-  });
+  to.gem = gemFrom;
+  to.type = typeFrom;
 }
-//1 = roxo
-//2 = verde
-//3 = vermelho
-//4 = laranja
-//5 = azul
 
-export function getGemCollisions(gemSlot: GemSlot, state: State) {
-  const previousXCollisions = checkCollisionWithPreviousGems(
+export function getGemSequences(gemSlot: IGemSlot, state: IState) {
+  const previousXSequences = checkSequenceWithPreviousGems(
     gemSlot,
     state,
     (gemSlot, slotIndex) => ({
@@ -151,7 +144,7 @@ export function getGemCollisions(gemSlot: GemSlot, state: State) {
     (gemSlot) => gemSlot.slotX
   );
 
-  const previousYCollisions = checkCollisionWithPreviousGems(
+  const previousYSequences = checkSequenceWithPreviousGems(
     gemSlot,
     state,
     (gemSlot, slotIndex) => ({
@@ -161,7 +154,7 @@ export function getGemCollisions(gemSlot: GemSlot, state: State) {
     (gemSlot) => gemSlot.slotY
   );
 
-  const nextXCollisions = checkCollisionWithNextGems(
+  const nextXSequences = checkSequenceWithNextGems(
     gemSlot,
     state,
     (gemSlot, slotIndex) => ({
@@ -171,7 +164,7 @@ export function getGemCollisions(gemSlot: GemSlot, state: State) {
     (gemSlot) => gemSlot.slotX
   );
 
-  const nextYCollisions = checkCollisionWithNextGems(
+  const nextYSequences = checkSequenceWithNextGems(
     gemSlot,
     state,
     (gemSlot, slotIndex) => ({
@@ -181,37 +174,49 @@ export function getGemCollisions(gemSlot: GemSlot, state: State) {
     (gemSlot) => gemSlot.slotY
   );
 
-  let validCollisions: GemSlot[] = [];
+  let validSequences = new Map<string, IGemSlot>();
+  const minSequenceSequenceDetect = GEMS_SEQUENCE_MIN - 1;
 
-  if (previousYCollisions.length + nextYCollisions.length >= 2) {
-    validCollisions = Array.prototype.concat(
-      ...previousYCollisions,
-      gemSlot,
-      ...nextYCollisions
-    );
+  if (
+    previousYSequences.length + nextYSequences.length >=
+    minSequenceSequenceDetect
+  ) {
+    for (const sequence of Array.prototype.concat(
+      previousYSequences,
+      nextYSequences
+    )) {
+      validSequences.set(createGemKey(sequence)!, sequence);
+    }
   }
 
-  if (previousXCollisions.length + nextXCollisions.length >= 2) {
-    validCollisions = Array.prototype.concat(
-      ...validCollisions,
-      ...previousXCollisions,
-      gemSlot,
-      ...nextXCollisions
-    );
+  if (
+    previousXSequences.length + nextXSequences.length >=
+    minSequenceSequenceDetect
+  ) {
+    for (const sequence of Array.prototype.concat(
+      previousXSequences,
+      nextXSequences
+    )) {
+      validSequences.set(createGemKey(sequence)!, sequence);
+    }
   }
 
-  if (validCollisions.length < 3) return [];
-  validCollisions.sort((a, b) => b.slotY - a.slotY);
-  return validCollisions;
+  if (validSequences.size < minSequenceSequenceDetect) return [];
+  validSequences.set(createGemKey(gemSlot)!, gemSlot);
+  return [...validSequences.values()];
 }
 
-function checkCollisionWithPreviousGems(
-  gemSlot: GemSlot,
-  state: State,
-  createPreviousGemKeyFn: (gemSlot: GemSlot, slotIndex: number) => Slot,
-  getSlotIndex: (gemSlot: GemSlot) => number
+export function getGemInitialY() {
+  return INITIAL_SLOT_POSITION.y - SLOT_SIZE.height / GEMS_TYPES_COUNT;
+}
+
+function checkSequenceWithPreviousGems(
+  gemSlot: IGemSlot,
+  state: IState,
+  createPreviousGemKeyFn: (gemSlot: IGemSlot, slotIndex: number) => ISlot,
+  getSlotIndex: (gemSlot: IGemSlot) => number
 ) {
-  const slotsCollision: GemSlot[] = [];
+  const slotsSequence: IGemSlot[] = [];
   let slotIndex = getSlotIndex(gemSlot);
 
   while (slotIndex > 0) {
@@ -221,22 +226,22 @@ function checkCollisionWithPreviousGems(
     const isSameType = compareGemTypes(previousSlot, gemSlot);
 
     if (isSameType) {
-      slotsCollision.push(previousSlot);
+      slotsSequence.push(previousSlot);
     } else {
       slotIndex = 0;
     }
     slotIndex--;
   }
-  return slotsCollision;
+  return slotsSequence;
 }
 
-function checkCollisionWithNextGems(
-  gemSlot: GemSlot,
-  state: State,
-  createNextGemKeyFn: (gemSlot: GemSlot, slotIndex: number) => Slot,
-  getSlotIndex: (gemSlot: GemSlot) => number
+function checkSequenceWithNextGems(
+  gemSlot: IGemSlot,
+  state: IState,
+  createNextGemKeyFn: (gemSlot: IGemSlot, slotIndex: number) => ISlot,
+  getSlotIndex: (gemSlot: IGemSlot) => number
 ) {
-  const slotsCollision: GemSlot[] = [];
+  const slotsSequence: IGemSlot[] = [];
   let slotIndex = getSlotIndex(gemSlot);
 
   while (slotIndex < BOARD_SIZE.columns - 1) {
@@ -245,15 +250,15 @@ function checkCollisionWithNextGems(
     const isSameType = compareGemTypes(nextSlot, gemSlot);
 
     if (isSameType) {
-      slotsCollision.push(nextSlot);
+      slotsSequence.push(nextSlot);
     } else {
       slotIndex = BOARD_SIZE.columns;
     }
     slotIndex++;
   }
-  return slotsCollision;
+  return slotsSequence;
 }
 
-function compareGemTypes(gemSlot1: GemSlot, gemSlot2: GemSlot) {
+function compareGemTypes(gemSlot1: IGemSlot, gemSlot2: IGemSlot) {
   return gemSlot1.type === gemSlot2.type;
 }

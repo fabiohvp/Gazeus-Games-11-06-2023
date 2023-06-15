@@ -1,20 +1,30 @@
-type Callback = () => void;
+type IPromiseResolve = (value: void | PromiseLike<void>) => void;
 
-interface Slot {
+interface IAudioManager {
+  playing: boolean;
+  load(sounds: string[]): Promise<void>;
+  loop(): void;
+  mute(muted: boolean): void;
+  play(sound: string): void;
+  stop(): void;
+}
+
+interface ISlot {
   slotX: number;
   slotY: number;
 }
 
-interface GemSlot extends Slot {
+interface IGemSlot extends ISlot {
   type: number;
   gem: import("pixi.js").Sprite;
 }
 
-interface State {
+interface IState {
   app: import("pixi.js").Application<import("pixi.js").ICanvas>;
-  currentStage: Container | null;
+  currentStage: import("pixi.js").Container | null;
   score: number;
-  slots: GemSlot[][];
+  slots: IGemSlot[][];
+  soundEnabled: boolean;
   spritesheet: import("pixi.js").Spritesheet;
-  swaping: boolean;
+  swapEnabled: boolean;
 }

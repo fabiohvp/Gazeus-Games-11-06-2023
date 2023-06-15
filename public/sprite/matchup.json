@@ -125,6 +125,27 @@
       "trimmed": false,
       "spriteSourceSize": { "x": 0, "y": 0, "w": 163, "h": 55 },
       "sourceSize": { "w": 163, "h": 55 }
+    },
+    "asset_highest_score.png": {
+      "frame": { "x": 523, "y": 1435, "w": 80, "h": 45 },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 45 },
+      "sourceSize": { "w": 80, "h": 45 }
+    },
+    "asset_sound_on.png": {
+      "frame": { "x": 523, "y": 1400, "w": 40, "h": 35 },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 40, "h": 35 },
+      "sourceSize": { "w": 40, "h": 35 }
+    },
+    "asset_sound_off.png": {
+      "frame": { "x": 564, "y": 1400, "w": 40, "h": 35 },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 40, "h": 35 },
+      "sourceSize": { "w": 40, "h": 35 }
     }
   },
   "meta": {
