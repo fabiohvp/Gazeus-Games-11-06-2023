@@ -23,6 +23,7 @@ interface IState {
   app: import("pixi.js").Application<import("pixi.js").ICanvas>;
   currentStage: import("pixi.js").Container | null;
   score: number;
+  scoring: boolean;
   slots: IGemSlot[][];
   soundEnabled: boolean;
   spritesheet: import("pixi.js").Spritesheet;

@@ -1,3 +1,5 @@
+import { TEXTURE } from "./texture";
+
 export const STAGE_NAME = {
   board: "board",
   menu: "menu",
@@ -6,10 +8,18 @@ export const STAGE_NAME = {
   welcome: "welcome",
 };
 
+export const GEMS = [
+  TEXTURE.Gem1,
+  TEXTURE.Gem2,
+  TEXTURE.Gem3,
+  TEXTURE.Gem4,
+  TEXTURE.Gem5,
+];
+
 export const MATCH_TIME = 60; //seconds
 export const INITIAL_SCORE = 0;
 
-export const GEMS_TYPES_COUNT = 5;
+export const GEMS_TYPES_COUNT = Object.keys(GEMS).length;
 export const GEMS_SEQUENCE_MIN = 3;
 
 export const STAGE_SIZE = { height: 550, width: 600 };
@@ -23,6 +33,7 @@ export const FINAL_SLOT_POSITION = {
 };
 
 export const EVENT_MATCH_END = "match-end";
+export const EVENT_MATCH_RESTART = "match-restart";
 export const EVENT_SCORE_UPDATE = "update-score";
 export const EVENT_SCORE_HIGHEST = "highest-score";
 export const EVENT_SOUND_ENABLED = "sound-enabled";

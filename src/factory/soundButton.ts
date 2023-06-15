@@ -2,8 +2,8 @@ import { Sprite } from "pixi.js";
 import { audioManager } from "../game/AudioManager";
 import {
   EVENT_SOUND_ENABLED,
-  FINAL_SLOT_POSITION,
   LOCALSTORAGE_SOUND_ENABLED,
+  STAGE_SIZE,
 } from "../game/constant";
 import { TEXTURE } from "../game/texture";
 
@@ -12,8 +12,7 @@ export function createSoundButton(state: IState) {
   soundButton.anchor.set(0.5, 0);
   soundButton.cursor = "pointer";
   soundButton.interactive = true;
-  soundButton.position.x = FINAL_SLOT_POSITION.x + 65;
-  soundButton.position.y = 15;
+  soundButton.position.set(STAGE_SIZE.width - soundButton.width + 5, 23);
 
   soundButton.on("pointerup", () => {
     // @ts-ignore

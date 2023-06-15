@@ -17,6 +17,7 @@ export function createState(
     app,
     currentStage: null,
     score: INITIAL_SCORE,
+    scoring: false,
     slots: createSlots(),
     soundEnabled,
     spritesheet,

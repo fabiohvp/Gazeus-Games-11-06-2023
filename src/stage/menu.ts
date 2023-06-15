@@ -1,13 +1,7 @@
 import { Container, Sprite } from "pixi.js";
 import { createButton } from "../factory/button";
-import { changeGemType } from "../factory/gem";
 import { createText } from "../factory/text";
-import {
-  EVENT_SCORE_UPDATE,
-  EVENT_TIMER_START,
-  INITIAL_SCORE,
-  STAGE_NAME,
-} from "../game/constant";
+import { EVENT_MATCH_RESTART, STAGE_NAME } from "../game/constant";
 import { TEXTURE } from "../game/texture";
 
 export async function createMenu(parentContainer: Container, state: IState) {
@@ -21,7 +15,8 @@ export async function createMenu(parentContainer: Container, state: IState) {
   container.width = state.app.screen.width / 2;
 
   container.position.x = container.width / 2;
-  container.position.y = container.height / 2;
+  //container.position.y = container.height / 2;
+  container.position.y = 300;
 
   const title = createTitle();
   container.addChild(title);
@@ -49,19 +44,9 @@ function createPlayButton(
   button.addChild(text);
 
   button.on("pointerup", async () => {
-    state.score = INITIAL_SCORE;
-    // @ts-ignore
-    state.app.stage.emit(EVENT_SCORE_UPDATE, state.score);
-
-    for (let slotX = 0; slotX < state.slots.length; slotX++) {
-      for (let slotY = 0; slotY < state.slots.length; slotY++) {
-        changeGemType(state.slots[slotX][slotY], state);
-      }
-    }
     parentContainer.removeChild(container);
-    state.swapEnabled = true;
     // @ts-ignore
-    state.app.stage.emit(EVENT_TIMER_START);
+    state.app.stage.emit(EVENT_MATCH_RESTART);
   });
   return button;
 }

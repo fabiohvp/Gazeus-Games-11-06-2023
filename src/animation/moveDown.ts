@@ -1,5 +1,5 @@
 import { Ticker } from "pixi.js";
-import { calculateGemCoordinateY } from "../factory/gem";
+import { calculateGemPositionY } from "../factory/gem";
 
 const MOVE_DOWN_SPEED = 2;
 
@@ -16,7 +16,7 @@ export function moveDown(gemSlot: IGemSlot) {
     const deltaMS = delta / Ticker.targetFPMS;
     const increase = deltaMS / MOVE_DOWN_SPEED;
 
-    const finalY = calculateGemCoordinateY(gemSlot.slotY);
+    const finalY = calculateGemPositionY(gemSlot.slotY);
 
     if (gemSlot.gem.position.y < finalY) {
       gemSlot.gem.position.y += increase;

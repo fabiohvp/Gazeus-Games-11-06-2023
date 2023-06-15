@@ -3,11 +3,11 @@ import { createText } from "../factory/text";
 import {
   EVENT_MATCH_END,
   EVENT_TIMER_START,
-  FINAL_SLOT_POSITION,
   INITIAL_SCORE,
   INITIAL_SLOT_POSITION,
   MATCH_TIME,
   STAGE_NAME,
+  STAGE_SIZE,
 } from "../game/constant";
 import { TEXTURE } from "../game/texture";
 
@@ -19,7 +19,7 @@ export async function createTimer(state: IState) {
     state.spritesheet.textures[TEXTURE.Text_container]
   );
   container.position.set(
-    FINAL_SLOT_POSITION.x - scoreBackground.width + 25,
+    STAGE_SIZE.width - scoreBackground.width - 75,
     INITIAL_SLOT_POSITION.y - scoreBackground.height - 30
   );
   container.addChild(scoreBackground);
@@ -32,21 +32,70 @@ export async function createTimer(state: IState) {
   container.addChild(timerText);
   timerText.position.set(container.width * 0.55, container.height * 0.42);
 
-  bindTimerEvents(timerText, state);
-  startTime(timerText, state);
+  bindTimerEvents(container, timerText, state);
+  //startTime(timerText, state);
   return container;
 }
 
-function bindTimerEvents(timerText: Text, state: IState) {
+function bindTimerEvents(container: Container, timerText: Text, state: IState) {
+  const onTimerStart = createOnTimerStart(container, timerText, state);
+
   // @ts-ignore
-  state.app.stage.on(EVENT_TIMER_START, createOnTimerStart(timerText, state));
+  state.app.stage.on(EVENT_TIMER_START, onTimerStart);
+
+  container.on("destroyed", () => {
+    // @ts-ignore
+    state.app.stage.off(EVENT_TIMER_START, onTimerStart);
+  });
 }
 
-function createOnTimerStart(timerText: Text, state: IState) {
-  return function () {
-    console.log("timer");
-    startTime(timerText, state);
+function createOnTimerStart(
+  container: Container,
+  timerText: Text,
+  state: IState
+) {
+  let emitMatchEndEvent = false;
+  let isMatchRunning = true;
+  let timeWithDecimals = 0;
+  let time = 0;
+  const ticker = Ticker.shared;
+
+  timerText.text = formatTime(0);
+
+  const resetTimer = () => {
+    emitMatchEndEvent = false;
+    isMatchRunning = true;
+    timeWithDecimals = 0;
+    time = 0;
+    timerText.text = formatTime(time);
   };
+
+  const onTick = (delta: number) => {
+    if (isMatchRunning) {
+      timeWithDecimals += (1 / 60) * delta;
+      time = Math.floor(timeWithDecimals);
+      timerText.text = formatTime(time);
+
+      if (time === MATCH_TIME) {
+        emitMatchEndEvent = true;
+        isMatchRunning = false;
+      }
+    } else if (!state.scoring) {
+      if (emitMatchEndEvent) {
+        emitMatchEndEvent = false;
+        // @ts-ignore
+        state.app.stage.emit(EVENT_MATCH_END);
+      }
+    }
+  };
+  ticker.add(onTick);
+
+  container.on("destroyed", () => {
+    // @ts-ignore
+    ticker.remove(onTick);
+  });
+
+  return resetTimer;
 }
 
 function createPointsText() {
@@ -74,28 +123,28 @@ function formatTime(time: number) {
   );
 }
 
-function startTime(timerText: Text, state: IState) {
-  let timeWithDecimals = 0;
-  let time = 0;
-  let lastTime = 0;
-  const ticker = Ticker.shared;
+// function startTime(timerText: Text, state: IState) {
+//   let timeWithDecimals = 0;
+//   let time = 0;
+//   let lastTime = 0;
+//   const ticker = Ticker.shared;
 
-  timerText.text = formatTime(0);
+//   timerText.text = formatTime(0);
 
-  const onTick = (delta: number) => {
-    timeWithDecimals += (1 / 60) * delta;
-    time = Math.floor(timeWithDecimals);
+//   const onTick = (delta: number) => {
+//     timeWithDecimals += (1 / 60) * delta;
+//     time = Math.floor(timeWithDecimals);
 
-    if (lastTime !== time) {
-      timerText.text = formatTime(time);
+//     if (lastTime !== time) {
+//       timerText.text = formatTime(time);
 
-      if (time === MATCH_TIME) {
-        ticker.remove(onTick);
-        // @ts-ignore
-        state.app.stage.emit(EVENT_MATCH_END);
-      }
-      lastTime = time;
-    }
-  };
-  ticker.add(onTick);
-}
+//       if (time === MATCH_TIME) {
+//         ticker.remove(onTick);
+//         // @ts-ignore
+//         state.app.stage.emit(EVENT_MATCH_END);
+//       }
+//       lastTime = time;
+//     }
+//   };
+//   ticker.add(onTick);
+// }
