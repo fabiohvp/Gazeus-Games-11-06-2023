@@ -18,6 +18,7 @@ import {
   EVENT_SCORE_UPDATE,
   EVENT_TIMER_START,
   INITIAL_SCORE,
+  SPRITE_NAME,
   STAGE_NAME,
 } from "../game/constant";
 import {
@@ -52,7 +53,7 @@ export async function createBoard(app: Application, state: IState) {
   const timer = await createTimer(app, state);
   container.addChild(timer);
 
-  startMatch(app, state);
+  await startMatch(app, container, state);
   bindBoardEvents(app, container, state);
   createInitialGems(app, container, state);
   handleMouseEvents(app, container, state);
@@ -78,7 +79,7 @@ function bindBoardEvents(
 ) {
   const onHighestScore = createOnHighestScore(container, state);
   const onMatchEnd = createOnMatchEnd(app, container, state);
-  const onRestartMatch = createOnRestartMatch(app, state);
+  const onRestartMatch = createOnRestartMatch(app, container, state);
 
   // @ts-ignore
   app.stage.on(EVENT_SCORE_HIGHEST, onHighestScore);
@@ -107,18 +108,17 @@ function createInitialGems(
 }
 
 function createOnHighestScore(container: Container, state: IState) {
-  let firstTimeHighestScore = true;
   return async function () {
-    const highestScoreIcon = new Sprite(
+    if (container.getChildByName(SPRITE_NAME.highestScore)) return;
+
+    const highestScoreSprite = new Sprite(
       state.spritesheet.textures[TEXTURE.Highest_score]
     );
-    highestScoreIcon.position.set(259, 18);
-    container.addChild(highestScoreIcon);
+    highestScoreSprite.name = SPRITE_NAME.highestScore;
+    highestScoreSprite.position.set(259, 18);
+    container.addChild(highestScoreSprite);
 
-    if (firstTimeHighestScore) {
-      audioManager.play(SOUND.HighestScore, true);
-      firstTimeHighestScore = false;
-    }
+    audioManager.play(SOUND.HighestScore, true);
   };
 }
 
@@ -133,9 +133,13 @@ function createOnMatchEnd(
   };
 }
 
-function createOnRestartMatch(app: Application, state: IState) {
+function createOnRestartMatch(
+  app: Application,
+  container: Container,
+  state: IState
+) {
   return async function () {
-    startMatch(app, state);
+    await startMatch(app, container, state);
     await resetBoard(app, state);
   };
 }
@@ -260,12 +264,19 @@ async function runPossibleMoves(app: Application, state: IState) {
   }
 }
 
-function startMatch(app: Application, state: IState) {
+async function startMatch(
+  app: Application,
+  container: Container,
+  state: IState
+) {
   state.score = INITIAL_SCORE;
   // @ts-ignore
   app.stage.emit(EVENT_SCORE_UPDATE, state.score);
   // @ts-ignore
   app.stage.emit(EVENT_TIMER_START);
+
+  let highestScoreSprite = container.getChildByName(SPRITE_NAME.highestScore);
+  highestScoreSprite?.removeFromParent();
 }
 
 async function updateScore(

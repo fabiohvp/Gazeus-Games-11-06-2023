@@ -48,6 +48,7 @@ function createOnUpdateScore(app: Application, scoreText: Text, state: IState) {
     const highestScore = parseInt(
       localStorage.getItem(LOCALSTORAGE_HIGHEST_SCORE) ?? "0"
     );
+
     if (state.score > highestScore) {
       localStorage.setItem(
         LOCALSTORAGE_HIGHEST_SCORE,
