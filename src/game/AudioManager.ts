@@ -2,6 +2,7 @@ import { AUDIO_ELEMENT_ID } from "./constant";
 
 class AudioManager implements IAudioManager {
   private audio: HTMLAudioElement;
+  private playingPriority = false;
   playing = false;
 
   constructor() {
@@ -44,7 +45,13 @@ class AudioManager implements IAudioManager {
     this.audio.muted = !muted;
   }
 
-  play(sound: string) {
+  play(sound: string, priority = false) {
+    if (priority) {
+      this.playingPriority = true;
+      this.audio.addEventListener("ended", this.onPlayingPriorityEnded);
+    } else {
+      if (this.playingPriority) return;
+    }
     this.audio.loop = false;
     this.audio.src = sound;
     this.audio.play();
@@ -55,6 +62,11 @@ class AudioManager implements IAudioManager {
     this.playing = false;
     this.audio.pause();
   }
+
+  private onPlayingPriorityEnded = () => {
+    this.playingPriority = false;
+    this.audio.removeEventListener("ended", this.onPlayingPriorityEnded);
+  };
 }
 
 export const audioManager = new AudioManager();

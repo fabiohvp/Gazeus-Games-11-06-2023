@@ -45,7 +45,7 @@ export function createGem(type: number, state: IState) {
   const gem = new Sprite(texture);
   gem.cursor = "pointer";
   gem.alpha = 0;
-  gem.interactive = true;
+  gem.eventMode = "static";
   return gem;
 }
 

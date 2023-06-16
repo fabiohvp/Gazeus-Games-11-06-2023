@@ -1,22 +1,25 @@
-import { Container, Sprite } from "pixi.js";
+import { Application, Container, Sprite } from "pixi.js";
 import { createButton } from "../factory/button";
 import { createText } from "../factory/text";
 import { EVENT_MATCH_RESTART, STAGE_NAME } from "../game/constant";
 import { TEXTURE } from "../game/texture";
 
-export async function createMenu(parentContainer: Container, state: IState) {
+export async function createMenu(
+  app: Application,
+  parentContainer: Container,
+  state: IState
+) {
   const container = new Container();
   container.name = STAGE_NAME.menu;
 
   container.addChild(
     new Sprite(state.spritesheet.textures[TEXTURE.Pause_menu])
   );
-  container.height = state.app.screen.height / 2;
-  container.width = state.app.screen.width / 2;
+  container.height = app.screen.height / 2;
+  container.width = app.screen.width / 2;
 
   container.position.x = container.width / 2;
-  //container.position.y = container.height / 2;
-  container.position.y = 300;
+  container.position.y = container.height / 2;
 
   const title = createTitle();
   container.addChild(title);
@@ -24,7 +27,7 @@ export async function createMenu(parentContainer: Container, state: IState) {
   const scoreText = createScoreText(state);
   container.addChild(scoreText);
 
-  const playButton = createPlayButton(container, parentContainer, state);
+  const playButton = createPlayButton(app, container, parentContainer, state);
   container.addChild(playButton);
 
   state.swapEnabled = false;
@@ -32,6 +35,7 @@ export async function createMenu(parentContainer: Container, state: IState) {
 }
 
 function createPlayButton(
+  app: Application,
   container: Container,
   parentContainer: Container,
   state: IState
@@ -46,7 +50,7 @@ function createPlayButton(
   button.on("pointerup", async () => {
     parentContainer.removeChild(container);
     // @ts-ignore
-    state.app.stage.emit(EVENT_MATCH_RESTART);
+    app.stage.emit(EVENT_MATCH_RESTART);
   });
   return button;
 }

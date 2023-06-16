@@ -8,7 +8,7 @@ export function createButton(
   const button = new Sprite(state.spritesheet.textures[textureUp]);
   button.anchor.set(0.5, 0);
   button.cursor = "pointer";
-  button.interactive = true;
+  button.eventMode = "static";
 
   button.on("pointerdown", () => {
     button.texture = state.spritesheet.textures[textureDown];

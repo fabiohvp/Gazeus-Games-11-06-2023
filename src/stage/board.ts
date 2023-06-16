@@ -1,5 +1,5 @@
 import { GlowFilter } from "@pixi/filter-glow";
-import { Container, FederatedPointerEvent, Sprite } from "pixi.js";
+import { Application, Container, FederatedPointerEvent, Sprite } from "pixi.js";
 import { fadeOut } from "../animation/fade";
 import { moveDown } from "../animation/moveDown";
 import {
@@ -33,33 +33,34 @@ import { createMenu } from "./menu";
 import { createScore } from "./score";
 import { createTimer } from "./timer";
 
-export async function createBoard(state: IState) {
+export async function createBoard(app: Application, state: IState) {
   audioManager.stop();
 
   const container = new Container();
   container.name = STAGE_NAME.board;
-  container.interactive = true;
+  container.eventMode = "static";
 
   const boardBackground = new Sprite(state.spritesheet.textures[TEXTURE.Bg]);
   container.addChild(boardBackground);
 
-  const soundButton = createSoundButton(state);
+  const soundButton = createSoundButton(app, state);
   container.addChild(soundButton);
 
-  const score = await createScore(state);
+  const score = await createScore(app, state);
   container.addChild(score);
 
-  const timer = await createTimer(state);
+  const timer = await createTimer(app, state);
   container.addChild(timer);
 
-  startMatch(state);
-  bindBoardEvents(container, state);
-  createInitialGems(container, state);
-  handleMouseEvents(container, state);
+  startMatch(app, state);
+  bindBoardEvents(app, container, state);
+  createInitialGems(app, container, state);
+  handleMouseEvents(app, container, state);
   return container;
 }
 
 async function addGems(
+  app: Application,
   container: Container,
   gemSlots: IGemSlot[],
   state: IState
@@ -67,39 +68,47 @@ async function addGems(
   for (const gemSlot of gemSlots) {
     container.addChild(gemSlot.gem);
   }
-  await renderBoard(gemSlots, state);
+  await renderBoard(app, gemSlots, state);
 }
 
-function bindBoardEvents(container: Container, state: IState) {
+function bindBoardEvents(
+  app: Application,
+  container: Container,
+  state: IState
+) {
   const onHighestScore = createOnHighestScore(container, state);
-  const onMatchEnd = createOnMatchEnd(container, state);
-  const onRestartMatch = createOnRestartMatch(state);
+  const onMatchEnd = createOnMatchEnd(app, container, state);
+  const onRestartMatch = createOnRestartMatch(app, state);
 
   // @ts-ignore
-  state.app.stage.on(EVENT_SCORE_HIGHEST, onHighestScore);
+  app.stage.on(EVENT_SCORE_HIGHEST, onHighestScore);
   // @ts-ignore
-  state.app.stage.on(EVENT_MATCH_END, onMatchEnd);
+  app.stage.on(EVENT_MATCH_END, onMatchEnd);
   // @ts-ignore
-  state.app.stage.on(EVENT_MATCH_RESTART, onRestartMatch);
+  app.stage.on(EVENT_MATCH_RESTART, onRestartMatch);
 
   container.on("destroyed", () => {
     // @ts-ignore
-    state.app.stage.off(EVENT_SCORE_HIGHEST, onHighestScore);
+    app.stage.off(EVENT_SCORE_HIGHEST, onHighestScore);
     // @ts-ignore
-    state.app.stage.off(EVENT_MATCH_END, onMatchEnd);
+    app.stage.off(EVENT_MATCH_END, onMatchEnd);
     // @ts-ignore
-    state.app.stage.off(EVENT_MATCH_RESTART, onRestartMatch);
+    app.stage.off(EVENT_MATCH_RESTART, onRestartMatch);
   });
 }
 
-function createInitialGems(container: Container, state: IState) {
+function createInitialGems(
+  app: Application,
+  container: Container,
+  state: IState
+) {
   const gemSlots = shuffleGems(state);
-  addGems(container, gemSlots, state);
+  addGems(app, container, gemSlots, state);
 }
 
 function createOnHighestScore(container: Container, state: IState) {
   let firstTimeHighestScore = true;
-  return function () {
+  return async function () {
     const highestScoreIcon = new Sprite(
       state.spritesheet.textures[TEXTURE.Highest_score]
     );
@@ -107,27 +116,35 @@ function createOnHighestScore(container: Container, state: IState) {
     container.addChild(highestScoreIcon);
 
     if (firstTimeHighestScore) {
-      audioManager.play(SOUND.HighestScore);
+      audioManager.play(SOUND.HighestScore, true);
       firstTimeHighestScore = false;
     }
   };
 }
 
-function createOnMatchEnd(container: Container, state: IState) {
+function createOnMatchEnd(
+  app: Application,
+  container: Container,
+  state: IState
+) {
   return async function () {
-    const menu = await createMenu(container, state);
+    const menu = await createMenu(app, container, state);
     container.addChild(menu);
   };
 }
 
-function createOnRestartMatch(state: IState) {
+function createOnRestartMatch(app: Application, state: IState) {
   return async function () {
-    startMatch(state);
-    await resetBoard(state);
+    startMatch(app, state);
+    await resetBoard(app, state);
   };
 }
 
-function handleMouseEvents(element: Container, state: IState) {
+function handleMouseEvents(
+  app: Application,
+  element: Container,
+  state: IState
+) {
   let moving = false;
   let currentGemKey: ISlot | null = null;
   let currentSprite: Sprite;
@@ -172,7 +189,7 @@ function handleMouseEvents(element: Container, state: IState) {
         ]);
 
         if (sequences.size) {
-          await updateScore(sequences, state);
+          await updateScore(app, sequences, state);
         } else {
           await swapGemsSlotsAnimated(to, from);
         }
@@ -199,7 +216,11 @@ function handleMouseEvents(element: Container, state: IState) {
   element.on("pointerdown", onDragStart);
 }
 
-async function renderBoard(gemSlots: IGemSlot[], state: IState): Promise<void> {
+async function renderBoard(
+  app: Application,
+  gemSlots: IGemSlot[],
+  state: IState
+): Promise<void> {
   const promises: Promise<void>[] = [];
 
   for (const gemSlot of gemSlots) {
@@ -209,11 +230,11 @@ async function renderBoard(gemSlots: IGemSlot[], state: IState): Promise<void> {
   }
 
   await Promise.all(promises);
-  await runPossibleMoves(state);
+  await runPossibleMoves(app, state);
   state.swapEnabled = true;
 }
 
-async function resetBoard(state: IState) {
+async function resetBoard(app: Application, state: IState) {
   const gemSlots: IGemSlot[] = [];
 
   for (let slotX = 0; slotX < state.slots.length; slotX++) {
@@ -222,32 +243,36 @@ async function resetBoard(state: IState) {
       gemSlots.push(state.slots[slotX][slotY]);
     }
   }
-  await renderBoard(gemSlots, state);
+  await renderBoard(app, gemSlots, state);
 }
 
-async function runPossibleMoves(state: IState) {
+async function runPossibleMoves(app: Application, state: IState) {
   const sequences = getAllPossibleSequences(state);
 
   if (sequences.size) {
-    return updateScore(sequences, state);
+    return updateScore(app, sequences, state);
   }
   const hasSequence = hasPossibleToMoves(state);
 
   if (!hasSequence) {
     await wait(500);
-    return resetBoard(state);
+    return resetBoard(app, state);
   }
 }
 
-function startMatch(state: IState) {
+function startMatch(app: Application, state: IState) {
   state.score = INITIAL_SCORE;
   // @ts-ignore
-  state.app.stage.emit(EVENT_SCORE_UPDATE, state.score);
+  app.stage.emit(EVENT_SCORE_UPDATE, state.score);
   // @ts-ignore
-  state.app.stage.emit(EVENT_TIMER_START);
+  app.stage.emit(EVENT_TIMER_START);
 }
 
-async function updateScore(gemSlots: Map<string, IGemSlot>, state: IState) {
+async function updateScore(
+  app: Application,
+  gemSlots: Map<string, IGemSlot>,
+  state: IState
+) {
   state.scoring = true;
   const promises: Promise<void>[] = [];
   audioManager.play(SOUND.Sequence);
@@ -295,7 +320,7 @@ async function updateScore(gemSlots: Map<string, IGemSlot>, state: IState) {
     }
   }
   // @ts-ignore
-  state.app.stage.emit(EVENT_SCORE_UPDATE, removedGemSlots.length);
-  await renderBoard(gemsToUpdate, state);
+  app.stage.emit(EVENT_SCORE_UPDATE, removedGemSlots.length);
+  await renderBoard(app, gemsToUpdate, state);
   state.scoring = false;
 }

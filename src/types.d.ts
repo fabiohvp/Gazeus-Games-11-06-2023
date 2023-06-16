@@ -5,7 +5,7 @@ interface IAudioManager {
   load(sounds: string[]): Promise<void>;
   loop(): void;
   mute(muted: boolean): void;
-  play(sound: string): void;
+  play(sound: string, priority?: boolean): void;
   stop(): void;
 }
 
@@ -20,7 +20,7 @@ interface IGemSlot extends ISlot {
 }
 
 interface IState {
-  app: import("pixi.js").Application<import("pixi.js").ICanvas>;
+  //app: import("pixi.js").Application<import("pixi.js").ICanvas>;
   currentStage: import("pixi.js").Container | null;
   score: number;
   scoring: boolean;

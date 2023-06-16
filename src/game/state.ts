@@ -1,37 +1,33 @@
-import { Application, Container, ICanvas, Spritesheet } from "pixi.js";
-import { audioManager } from "./AudioManager";
+import { Application, Container, Spritesheet } from "pixi.js";
 import {
   BOARD_SIZE,
   INITIAL_SCORE,
   LOCALSTORAGE_SOUND_ENABLED,
 } from "./constant";
 
-export function createState(
-  app: Application<ICanvas>,
-  spritesheet: Spritesheet
-): IState {
-  const soundEnabled = getSoundEnabled();
-  audioManager.mute(soundEnabled);
-
+export function createState(spritesheet: Spritesheet): IState {
   return {
-    app,
     currentStage: null,
     score: INITIAL_SCORE,
     scoring: false,
     slots: createSlots(),
-    soundEnabled,
+    soundEnabled: getSoundEnabled(),
     spritesheet,
     swapEnabled: false,
   };
 }
 
-export function changeStage(container: Container, state: IState) {
+export function changeStage(
+  app: Application,
+  container: Container,
+  state: IState
+) {
   if (state.currentStage) {
-    state.app.stage.removeChild(state.currentStage);
+    app.stage.removeChild(state.currentStage);
     state.currentStage.destroy({ children: true });
   }
   state.currentStage = container;
-  state.app.stage.addChild(container);
+  app.stage.addChild(container);
 }
 
 function createSlots() {

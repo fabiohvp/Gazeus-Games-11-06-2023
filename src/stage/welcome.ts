@@ -1,4 +1,4 @@
-import { Container, Sprite } from "pixi.js";
+import { Application, Container, Sprite } from "pixi.js";
 import { scaleUp } from "../animation/scale";
 import { createButton } from "../factory/button";
 import { createSoundButton } from "../factory/soundButton";
@@ -10,7 +10,7 @@ import { changeStage } from "../game/state";
 import { TEXTURE } from "../game/texture";
 import { createBoard } from "./board";
 
-export async function createWelcome(state: IState) {
+export async function createWelcome(app: Application, state: IState) {
   const container = new Container();
   container.name = STAGE_NAME.welcome;
 
@@ -19,14 +19,14 @@ export async function createWelcome(state: IState) {
   );
   container.addChild(titleBackground);
 
-  const soundButton = createSoundButton(state);
+  const soundButton = createSoundButton(app, state);
   container.addChild(soundButton);
 
-  const title = createTitle(state);
+  const title = createTitle(app, state);
   container.addChild(title);
   scaleUp(title);
 
-  const playButton = createPlayButton(state);
+  const playButton = createPlayButton(app, state);
   container.addChild(playButton);
   scaleUp(playButton);
 
@@ -34,7 +34,7 @@ export async function createWelcome(state: IState) {
     const onMouseClick = () => {
       document.removeEventListener("click", onMouseClick);
 
-      if (state.app.stage.children[0].name !== STAGE_NAME.welcome) return;
+      if (app.stage.children[0].name !== STAGE_NAME.welcome) return;
 
       audioManager.play(SOUND.Welcome);
       audioManager.loop();
@@ -44,7 +44,7 @@ export async function createWelcome(state: IState) {
   return container;
 }
 
-function createPlayButton(state: IState) {
+function createPlayButton(app: Application, state: IState) {
   const text = createText("Play", 42);
   text.anchor.set(0.5, -0.25);
 
@@ -53,19 +53,19 @@ function createPlayButton(state: IState) {
     TEXTURE.Large_button_up,
     state
   );
-  button.position.set(state.app.screen.width / 2, 260);
+  button.position.set(app.screen.width / 2, 260);
   button.addChild(text);
 
   button.on("pointerup", async () => {
-    const board = await createBoard(state);
-    changeStage(board, state);
+    const board = await createBoard(app, state);
+    changeStage(app, board, state);
   });
   return button;
 }
 
-function createTitle(state: IState) {
+function createTitle(app: Application, state: IState) {
   const title = new Sprite(state.spritesheet.textures[TEXTURE.Title]);
   title.anchor.set(0.5, 0);
-  title.position.set(state.app.screen.width / 2, 130);
+  title.position.set(app.screen.width / 2, 130);
   return title;
 }

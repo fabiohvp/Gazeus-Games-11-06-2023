@@ -1,4 +1,4 @@
-import { Sprite } from "pixi.js";
+import { Application, Sprite } from "pixi.js";
 import { audioManager } from "../game/AudioManager";
 import {
   EVENT_SOUND_ENABLED,
@@ -7,16 +7,16 @@ import {
 } from "../game/constant";
 import { TEXTURE } from "../game/texture";
 
-export function createSoundButton(state: IState) {
+export function createSoundButton(app: Application, state: IState) {
   const soundButton = new Sprite(getTexture(state));
   soundButton.anchor.set(0.5, 0);
   soundButton.cursor = "pointer";
-  soundButton.interactive = true;
+  soundButton.eventMode = "static";
   soundButton.position.set(STAGE_SIZE.width - soundButton.width + 5, 23);
 
   soundButton.on("pointerup", () => {
     // @ts-ignore
-    state.app.stage.emit(EVENT_SOUND_ENABLED);
+    app.stage.emit(EVENT_SOUND_ENABLED);
   });
 
   const onSoundEnabled = () => {
@@ -31,11 +31,11 @@ export function createSoundButton(state: IState) {
   };
 
   // @ts-ignore
-  state.app.stage.on(EVENT_SOUND_ENABLED, onSoundEnabled);
+  app.stage.on(EVENT_SOUND_ENABLED, onSoundEnabled);
 
   soundButton.on("destroyed", () => {
     // @ts-ignore
-    state.app.stage.off(EVENT_SOUND_ENABLED, onSoundEnabled);
+    app.stage.off(EVENT_SOUND_ENABLED, onSoundEnabled);
   });
 
   return soundButton;

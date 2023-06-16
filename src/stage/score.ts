@@ -1,4 +1,4 @@
-import { Container, Sprite, Text } from "pixi.js";
+import { Application, Container, Sprite, Text } from "pixi.js";
 import { createText } from "../factory/text";
 import {
   EVENT_SCORE_HIGHEST,
@@ -10,7 +10,7 @@ import {
 } from "../game/constant";
 import { TEXTURE } from "../game/texture";
 
-export async function createScore(state: IState) {
+export async function createScore(app: Application, state: IState) {
   const container = new Container();
   container.name = STAGE_NAME.score;
 
@@ -31,16 +31,16 @@ export async function createScore(state: IState) {
   container.addChild(scoreText);
   scoreText.position.set(container.width * 0.65, container.height * 0.42);
 
-  bindScoreEvents(scoreText, state);
+  bindScoreEvents(app, scoreText, state);
   return container;
 }
 
-function bindScoreEvents(scoreText: Text, state: IState) {
+function bindScoreEvents(app: Application, scoreText: Text, state: IState) {
   // @ts-ignore
-  state.app.stage.on(EVENT_SCORE_UPDATE, createOnUpdateScore(scoreText, state));
+  app.stage.on(EVENT_SCORE_UPDATE, createOnUpdateScore(app, scoreText, state));
 }
 
-function createOnUpdateScore(scoreText: Text, state: IState) {
+function createOnUpdateScore(app: Application, scoreText: Text, state: IState) {
   return function (value: number) {
     state.score += value;
     scoreText.text = state.score.toLocaleString();
@@ -54,7 +54,7 @@ function createOnUpdateScore(scoreText: Text, state: IState) {
         state.score.toLocaleString()
       );
       // @ts-ignore
-      state.app.stage.emit(EVENT_SCORE_HIGHEST, state.score);
+      app.stage.emit(EVENT_SCORE_HIGHEST, state.score);
     }
   };
 }

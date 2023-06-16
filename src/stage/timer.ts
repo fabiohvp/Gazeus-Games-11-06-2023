@@ -1,4 +1,4 @@
-import { Container, Sprite, Text, Ticker } from "pixi.js";
+import { Application, Container, Sprite, Text, Ticker } from "pixi.js";
 import { createText } from "../factory/text";
 import {
   EVENT_MATCH_END,
@@ -11,7 +11,7 @@ import {
 } from "../game/constant";
 import { TEXTURE } from "../game/texture";
 
-export async function createTimer(state: IState) {
+export async function createTimer(app: Application, state: IState) {
   const container = new Container();
   container.name = STAGE_NAME.timer;
 
@@ -32,24 +32,29 @@ export async function createTimer(state: IState) {
   container.addChild(timerText);
   timerText.position.set(container.width * 0.55, container.height * 0.42);
 
-  bindTimerEvents(container, timerText, state);
-  //startTime(timerText, state);
+  bindTimerEvents(app, container, timerText, state);
   return container;
 }
 
-function bindTimerEvents(container: Container, timerText: Text, state: IState) {
-  const onTimerStart = createOnTimerStart(container, timerText, state);
+function bindTimerEvents(
+  app: Application,
+  container: Container,
+  timerText: Text,
+  state: IState
+) {
+  const onTimerStart = createOnTimerStart(app, container, timerText, state);
 
   // @ts-ignore
-  state.app.stage.on(EVENT_TIMER_START, onTimerStart);
+  app.stage.on(EVENT_TIMER_START, onTimerStart);
 
   container.on("destroyed", () => {
     // @ts-ignore
-    state.app.stage.off(EVENT_TIMER_START, onTimerStart);
+    app.stage.off(EVENT_TIMER_START, onTimerStart);
   });
 }
 
 function createOnTimerStart(
+  app: Application,
   container: Container,
   timerText: Text,
   state: IState
@@ -84,7 +89,7 @@ function createOnTimerStart(
       if (emitMatchEndEvent) {
         emitMatchEndEvent = false;
         // @ts-ignore
-        state.app.stage.emit(EVENT_MATCH_END);
+        app.stage.emit(EVENT_MATCH_END);
       }
     }
   };
@@ -122,29 +127,3 @@ function formatTime(time: number) {
     seconds.toLocaleString().padStart(2, "0")
   );
 }
-
-// function startTime(timerText: Text, state: IState) {
-//   let timeWithDecimals = 0;
-//   let time = 0;
-//   let lastTime = 0;
-//   const ticker = Ticker.shared;
-
-//   timerText.text = formatTime(0);
-
-//   const onTick = (delta: number) => {
-//     timeWithDecimals += (1 / 60) * delta;
-//     time = Math.floor(timeWithDecimals);
-
-//     if (lastTime !== time) {
-//       timerText.text = formatTime(time);
-
-//       if (time === MATCH_TIME) {
-//         ticker.remove(onTick);
-//         // @ts-ignore
-//         state.app.stage.emit(EVENT_MATCH_END);
-//       }
-//       lastTime = time;
-//     }
-//   };
-//   ticker.add(onTick);
-// }
