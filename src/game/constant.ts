@@ -20,7 +20,7 @@ export const GEMS = [
   TEXTURE.Gem5,
 ];
 
-export const MATCH_TIME = 5; //seconds
+export const MATCH_TIME = 60; //seconds
 export const INITIAL_SCORE = 0;
 
 export const GEMS_TYPES_COUNT = Object.keys(GEMS).length;
