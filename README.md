@@ -1,5 +1,7 @@
 # Bejeweled game
 
+[Demo](https://gazeus-games-11-06-2023.vercel.app/)
+
 ### Comandos
 - Rodar projeto: `npm run dev` na pasta raiz do projeto
 - Rodar testes: `npm run test` na pasta raiz do projeto
